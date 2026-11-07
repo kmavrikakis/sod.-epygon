@@ -1,0 +1,35 @@
+name: Build APK from zip
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
+      - name: Unzip project
+        run: |
+          mkdir -p /tmp/proj
+          unzip -q "$(ls *.zip | head -n 1)" -d /tmp/proj
+          echo "PROJ=$(dirname "$(find /tmp/proj -name settings.gradle.kts | head -n 1)")" >> "$GITHUB_ENV"
+
+      - name: Build debug APK
+        run: cd "$PROJ" && gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Emfragma-APK
+          path: ${{ env.PROJ }}/app/build/outputs/apk/debug/app-debug.apk 
+  
